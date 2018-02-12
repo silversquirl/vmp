@@ -12,14 +12,11 @@ mpv_status='[status] ${time-pos} ${time-remaining} ${percent-pos}'
 file_create_modify() {
   case "$1" in
     current)
-      echo "loadfile $(sed q "$c/current") replace"
-      #rm -f "$s/stopped"
+      echo "loadfile \"$(sed 's/"/\\"/g;q' "$c/current")\" replace"
       ;;
 
     pause)
       echo "set pause yes"
-      #rm -f "$s/playing"
-      #>|"$s/paused"
       ;;
 
     quit)
@@ -31,16 +28,8 @@ file_create_modify() {
 
 file_delete() {
   case "$1" in
-    current)
-      echo "stop"
-      #>|"$s/stopped"
-      ;;
-
-    pause)
-      echo "set pause no"
-      #rm -f "$s/paused"
-      #>|"$s/playing"
-      ;;
+    current) echo "stop";;
+    pause) echo "set pause no";;
   esac
 }
 
@@ -54,7 +43,7 @@ handle_event() {
 
 get_events() {
   # Fake events for all existing files
-  for f in $c/*; do
+  for f in "$c"/*; do
     echo "CREATE ${f#"$c/"}"
   done
 
@@ -85,10 +74,10 @@ update_status() {
 }
 
 handle_status() {
-  grep --line-buffered '^\[\S*\] ' | while read -r kind args; do
-    case "$kind" in
-      '[status]') update_time $args;;
-      '[vmp]') update_status $args;;
+  grep --line-buffered '^\[\S*\] ' | while read -ra args; do
+    case "${args[0]}" in
+      '[status]') update_time "${args[@]:1}";;
+      '[vmp]') update_status "${args[@]:1}";;
     esac
   done
 }
@@ -114,8 +103,6 @@ if [ -e "$s" ]; then
   exit 1
 fi
 mkdir -p "$s/"
-#>"$s/stopped"
-#>"$s/playing"
 
 trap on_exit EXIT
 
