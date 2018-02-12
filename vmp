@@ -1,0 +1,2 @@
+#!/bin/sh
+vmp-basic | vmp-fancy # Pipe because then both sides must exit

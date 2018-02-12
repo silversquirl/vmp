@@ -1,0 +1,113 @@
+#!/bin/bash
+c="$HOME/.config/vmp"
+
+# Basic history and queue operations
+hist_push() { # Push current to history
+  [ -e "$c/current" ] && cat "$c/current" >>"$c/history"
+}
+
+hist_pop() { # Pop from history to current
+  next="$(sed '$b;d' "$c/history")"
+  if [ -z "$next" ]; then
+    rm "$c/current"
+    return 1
+  fi
+  echo "$next" >|"$c/current"
+  sed -i '$d' "$c/history"
+}
+
+queue_push() { # Push the given values to queue
+  printf '%s\n' "$@" >>"$c/queue"
+}
+
+queue_pop() { # Pop from queue to current
+  read -r next <"$c/queue"
+  if [ -z "$next" ]; then
+    rm "$c/current"
+    return 1
+  fi
+  echo "$next" >|"$c/current"
+  sed -i 1d "$c/queue"
+}
+
+queue_push_back() { # Push back current onto front of queue
+  tac "$c/queue" "$c/current" | tac >"$c/queue"
+}
+
+# Fancy interface with simple commands and queue support
+play() {
+  [ -e "$c/current" ] || next
+  [ -e "$c/pause" ] && rm "$c/pause"
+}
+
+pause() {
+  >|"$c/pause"
+}
+
+stop() {
+  queue_push_back
+  [ -e "$c/current" ] && rm "$c/current"
+}
+
+enqueue() {
+  oldifs="$IFS"
+  IFS=
+  queue_push $1 # Purposeful expansion (for globs)
+  IFS="$oldifs"
+}
+
+next() { # Dequeue
+  hist_push
+  queue_pop
+}
+
+previous() { # Pop from history stack
+  queue_push_back
+  hist_pop
+}
+
+quit() {
+  >|"$c/quit"
+  exit 0
+}
+
+handle_command() {
+  cmd="$1"
+  shift
+  case "$cmd" in
+    play) play;;
+    pause) pause;;
+    stop) stop;;
+
+    enqueue|queue) enqueue "$*";;
+    next) next;;
+    prev|previous) previous;;
+
+    quit) quit;;
+  esac
+}
+
+# Signal handlers
+on_exit() {
+  rm -f "$c/control"
+}
+
+# Init
+if [ -e "$c/control" ]; then
+  echo "Another instance of vmp-fancy may be running" >&2
+  echo "If you're sure one isn't, delete the control FIFO located at:" ?>&2
+  cd "$c"
+  printf '\t%s\n' "$PWD/control" >&2
+  exit 1
+fi
+mkfifo "$c/control"
+[ -e "$c/queue" ] || >"$c/queue"
+[ -e "$c/history" ] || >"$c/history"
+
+trap on_exit EXIT
+
+# Event loop
+exec 3<>"$c/control"
+while read -ra command; do
+  handle_command "${command[@]}"
+done <&3
