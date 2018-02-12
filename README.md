@@ -42,6 +42,7 @@ Stuff you probably already have:
 - `cmp`
 - `cat`
 - `grep` with support for the `--line-buffered` option
+- `shuf`
 
 Stuff you might need to install:
 

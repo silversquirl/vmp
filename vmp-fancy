@@ -66,6 +66,10 @@ previous() { # Pop from history stack
   hist_pop
 }
 
+shuffle() { # Shuffle the queue
+  shuf -o "$c/queue" "$c/queue"
+}
+
 restart() { # Restart the current track
   sponge "$c/current" <"$c/current"
 }
@@ -86,6 +90,7 @@ handle_command() {
     enqueue|queue) enqueue "$*";;
     next) next;;
     prev|previous) previous;;
+    shuf|shuffle) shuffle;;
     restart) restart;;
 
     quit) quit;;
