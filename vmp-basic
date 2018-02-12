@@ -1,0 +1,124 @@
+#!/bin/bash -e
+# Basic interface to vmp
+# Mainly used internally by the fancy interface, but there's nothing
+# stopping anybody from using it directly
+
+c="$HOME/.config/vmp"
+s="$c/state"
+
+mpv_status='[status] ${time-pos} ${time-remaining} ${percent-pos}'
+
+file_create_modify() {
+  case "$1" in
+    current)
+      echo "loadfile $(sed q "$c/current") replace"
+      #rm -f "$s/stopped"
+      ;;
+
+    pause)
+      echo "set pause yes"
+      #rm -f "$s/playing"
+      #>|"$s/paused"
+      ;;
+
+    quit)
+      echo "quit"
+      exit
+      ;;
+  esac
+}
+
+file_delete() {
+  case "$1" in
+    current)
+      echo "stop"
+      #>|"$s/stopped"
+      ;;
+
+    pause)
+      echo "set pause no"
+      #rm -f "$s/paused"
+      #>|"$s/playing"
+      ;;
+  esac
+}
+
+handle_event() {
+  case "$1" in
+    CREATE) file_create_modify "$2";;
+    MODIFY) file_create_modify "$2";;
+    DELETE) file_delete "$2";;
+  esac
+}
+
+get_events() {
+  # Fake events for all existing files
+  for f in $c/*; do
+    echo "CREATE ${f#"$c/"}"
+  done
+
+  inotifywait -qme create,delete,modify "$c" --format '%e %f'
+}
+
+ss() { # Status sync
+  if [ "$1" = no ]; then
+    rm -f "$s/$2"
+    [ -n "$3" ] && >|"$s/$3"
+  else
+    >|"$s/$2"
+    [ -n "$3" ] && rm -f "$s/$3"
+  fi
+  : # For some reason it doesn't return without this
+}
+
+update_time() {
+  time="$1 -$2 $3%"
+  cmp -s "$c/time" <(echo "$time") || echo "$time" >"$c/time"
+}
+
+update_status() {
+  case "$1" in
+    pause) ss "$2" paused playing;;
+    eof-reached) ss "$2" stopped;;
+  esac
+}
+
+handle_status() {
+  grep --line-buffered '^\[\S*\] ' | while read -r kind args; do
+    case "$kind" in
+      '[status]') update_time $args;;
+      '[vmp]') update_status $args;;
+    esac
+  done
+}
+
+player() {
+  mpv \
+    --input-file /dev/stdin --vid=no --idle=yes \
+    --term-status-msg="$mpv_status" --script vmp.lua 2>&1 | \
+    handle_status
+}
+
+# Signal handlers
+on_exit() {
+  rm -rf "$c/state/" "$c/quit" "$c/time"
+}
+
+# Init
+if [ -e "$s" ]; then
+  echo "Another instance of vmp-basic may be running." >&2
+  echo "If you're sure one isn't, delete the state directory located at:" >&2
+  cd "$c"
+  printf '\t%s\n' "$PWD/state/" >&2
+  exit 1
+fi
+mkdir -p "$s/"
+#>"$s/stopped"
+#>"$s/playing"
+
+trap on_exit EXIT
+
+# Event loop
+while read -r ev fn; do
+  handle_event "$ev" "$fn"
+done < <(get_events) | player
