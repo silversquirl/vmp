@@ -37,6 +37,7 @@ handle_event() {
   case "$1" in
     CREATE) file_create_modify "$2";;
     MODIFY) file_create_modify "$2";;
+    MOVED_TO) file_create_modify "$2";;
     DELETE) file_delete "$2";;
   esac
 }
@@ -47,7 +48,7 @@ get_events() {
     echo "CREATE ${f#"$c/"}"
   done
 
-  inotifywait -qme create,delete,modify "$c" --format '%e %f'
+  inotifywait -qme create,delete,modify,moved_to "$c" --format '%e %f'
 }
 
 ss() { # Status sync

@@ -66,6 +66,10 @@ previous() { # Pop from history stack
   hist_pop
 }
 
+restart() { # Restart the current track
+  sponge "$c/current" <"$c/current"
+}
+
 quit() {
   >|"$c/quit"
   exit 0
@@ -82,6 +86,7 @@ handle_command() {
     enqueue|queue) enqueue "$*";;
     next) next;;
     prev|previous) previous;;
+    restart) restart;;
 
     quit) quit;;
   esac
