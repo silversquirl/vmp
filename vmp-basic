@@ -1,10 +1,11 @@
-#!/bin/bash -e
+#!/bin/bash
 # Basic interface to vmp
 # Mainly used internally by the fancy interface, but there's nothing
 # stopping anybody from using it directly
 
 c="$HOME/.config/vmp"
 s="$c/state"
+r="${0%/*}"
 
 mpv_status='[status] ${time-pos} ${time-remaining} ${percent-pos}'
 
@@ -95,7 +96,7 @@ handle_status() {
 player() {
   mpv \
     --input-file /dev/stdin --vid=no --idle=yes \
-    --term-status-msg="$mpv_status" --script vmp.lua 2>&1 | \
+    --term-status-msg="$mpv_status" --script "$r/vmp.lua" 2>&1 | \
     handle_status
 }
 
