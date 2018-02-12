@@ -16,7 +16,9 @@ vmp is controlled by, and stores most of its state in, files. This
 makes for an interface that is very easy to connect to other things,
 such as status bars and notifications.
 
-vmp has two parts: the basic interface and the fancy interface.
+vmp has two main parts: the basic interface and the fancy interface. There
+is also a script designed to work together with them named `vmp-autonext`,
+which automatically advances the play queue when a track finishes playing.
 
 ### Basic interface
 
@@ -31,9 +33,6 @@ basic interface, and provides a command-based control system using a FIFO.
 It also does a few extra things, like keeping track of the queued files
 and the player history, allowing you to jump to next or previous tracks.
 
-TODO: The fancy interface currently does not automatically play the next
-track when the current one finishes.
-
 ## Dependencies
 
 Stuff you probably already have:
@@ -42,10 +41,16 @@ Stuff you probably already have:
 - `sed`
 - `cmp`
 - `cat`
-- `tac`
 - `grep` with support for the `--line-buffered` option
 
 Stuff you might need to install:
 
 - `mpv`
 - `inotifywait`
+- `sponge` (from `moreutils`)
+
+Debian has packages for everything. Install them like this:
+
+```shell
+# apt install mpv inotify-tools moreutils
+```

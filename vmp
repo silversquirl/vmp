@@ -1,2 +1,3 @@
 #!/bin/sh
-vmp-basic | vmp-fancy # Pipe because then both sides must exit
+# Pipe because then all of them must exit
+vmp-basic | vmp-fancy | vmp-autonext

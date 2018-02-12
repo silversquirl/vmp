@@ -13,7 +13,7 @@ hist_pop() { # Pop from history to current
     return 1
   fi
   echo "$next" >|"$c/current"
-  sed -i '$d' "$c/history"
+  sed '$d' -i "$c/history"
 }
 
 queue_push() { # Push the given values to queue
@@ -27,11 +27,11 @@ queue_pop() { # Pop from queue to current
     return 1
   fi
   echo "$next" >|"$c/current"
-  sed -i 1d "$c/queue"
+  sed 1d -i "$c/queue"
 }
 
 queue_push_back() { # Push back current onto front of queue
-  tac "$c/queue" "$c/current" | tac >"$c/queue"
+  [ -e "$c/current" ] && cat "$c/current" "$c/queue" | sponge "$c/queue"
 }
 
 # Fancy interface with simple commands and queue support

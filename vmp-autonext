@@ -1,0 +1,17 @@
+#!/bin/bash
+# A very simple script to autmatically advance vmp's play queue
+c="$HOME/.config/vmp"
+
+get_events() {
+  until [ -e "$c/state" ]; do :; done
+  [ -e "$c/state/stopped" ] && echo stopped
+  while inotifywait -qe create "$c/state/" --format '%f'; do :; done
+}
+
+while read -r fn; do
+  [ "$fn" = stopped ] && \
+    [ -e "$c/current" ] && \
+    [ -e "$c/time" ] && \
+    { read -r t r p <"$c/time"; [ "${p%\%}" -ge 99 ]; } && \
+    echo next >>"$c/control"
+done < <(get_events)
